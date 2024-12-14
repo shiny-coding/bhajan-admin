@@ -80,7 +80,11 @@ export function BhajanList() {
         {data?.searchBhajans.map((searchResult, index) => (
           <div 
             key={index} 
-            className="border-2 border-gray-300 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow text-left"
+            className={`border-2 cursor-pointer border-gray-300 rounded-lg p-4 bg-white
+                        shadow-sm hover:shadow-md transition-shadow text-left
+                        ${currentBhajan?.title == searchResult.bhajan.title && 
+                          currentBhajan?.author == searchResult.bhajan.author 
+                            ? 'bg-green-200' : ''}`}
             onClick={() => setCurrentBhajan({ 
               title: searchResult.bhajan.title, 
               author: searchResult.bhajan.author 

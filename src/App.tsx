@@ -6,7 +6,8 @@ const remoteUrl = 'https://bhajan.miracall.net/api'
 const localUrl = 'http://localhost:4000'
 
 const client = new ApolloClient({
-  uri: localUrl,
+  // uri: localUrl,
+  uri: remoteUrl,
   cache: new InMemoryCache(),
 })
 
