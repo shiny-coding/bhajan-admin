@@ -3,6 +3,7 @@ import { gql, useQuery, useMutation } from '@apollo/client'
 import { DeleteModal } from './DeleteModal'
 import { SearchResult } from '../gql/graphql'
 // import { Bhajan, SearchResult } from '../models/Bhajan'
+import { useBhajanStore } from '../stores/bhajanStore'
 
 
 const DELETE_BHAJAN = gql`
@@ -32,6 +33,7 @@ export function BhajanList() {
 
   const [deleteBhajan] = useMutation(DELETE_BHAJAN)
   const [deleteModal, setDeleteModal] = useState<{ title: string; author: string } | null>(null)
+  const { currentBhajan, setCurrentBhajan } = useBhajanStore()
 
   const handleDelete = async (title: string, author: string) => {
     setDeleteModal({ title, author })
@@ -79,6 +81,10 @@ export function BhajanList() {
           <div 
             key={index} 
             className="border-2 border-gray-300 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow text-left"
+            onClick={() => setCurrentBhajan({ 
+              title: searchResult.bhajan.title, 
+              author: searchResult.bhajan.author 
+            })}
           >
             <div className="highlight flex justify-between items-center">
               <div>
