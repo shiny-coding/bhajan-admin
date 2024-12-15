@@ -3,6 +3,7 @@ import { useBhajanStore } from '../stores/bhajanStore'
 import { Bhajan } from '../gql/graphql'
 import { keys } from 'ts-transformer-keys'
 import { useRef } from 'react'
+import { SEARCH_BHAJANS } from './BhajanList'
 
 const BHAJAN_FIELDS = keys<Bhajan>().filter(key => !key.startsWith('_'))
 
@@ -33,14 +34,28 @@ const CREATE_BHAJAN = gql`
 `
 
 export function BhajanForm() {
-  const { currentBhajan } = useBhajanStore()
+  const { currentBhajan, setCurrentBhajan, search } = useBhajanStore()
   const { data, loading, refetch } = useQuery(GET_BHAJAN, {
     variables: currentBhajan,
     skip: !currentBhajan,
     notifyOnNetworkStatusChange: true // this is needed to force a re-render when the data changes
   })
 
-  const [createBhajan] = useMutation(CREATE_BHAJAN, {})
+  const [createBhajan] = useMutation(CREATE_BHAJAN, {
+    refetchQueries: [
+      {
+        query: SEARCH_BHAJANS,
+        variables: { searchTerm: search }
+      }
+    ],
+    onCompleted: (data) => {
+      const formData = Object.fromEntries(new FormData(formRef.current!))
+      setCurrentBhajan({ 
+        title: formData.title as string,
+        author: formData.author as string
+      })
+    }
+  })
 
   const bhajan = data?.getBhajan
 

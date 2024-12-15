@@ -1,23 +1,33 @@
-import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client'
-import { BhajanList } from './components/BhajanList'
-import { BhajanForm } from './components/BhajanForm'
+import { ApolloClient, InMemoryCache, ApolloProvider, createHttpLink, from } from '@apollo/client'
+import { setContext } from '@apollo/client/link/context'
+import { AppContent } from './components/AppContent'
+import { useAuthStore } from './stores/authStore'
 
 const remoteUrl = 'https://bhajan.miracall.net/api'
 const localUrl = 'http://localhost:4000'
 
-const client = new ApolloClient({
-  // uri: localUrl,
-  uri: remoteUrl,
-  cache: new InMemoryCache(),
+const httpLink = createHttpLink({
+  uri: localUrl,
 })
 
 function App() {
+  const { writeTokenHash } = useAuthStore()
+
+  const authLink = setContext((_, { headers }) => ({
+    headers: {
+      ...headers,
+      'Write-Token-Hash': writeTokenHash || ''
+    }
+  }))
+
+  const client = new ApolloClient({
+    link: from([authLink, httpLink]),
+    cache: new InMemoryCache(),
+  })
+
   return (
     <ApolloProvider client={client}>
-      <div className="main-container h-screen flex gap-4 p-4">
-        <BhajanList />
-        <BhajanForm />
-      </div>
+      <AppContent />
     </ApolloProvider>
   )
 }

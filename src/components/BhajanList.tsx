@@ -2,9 +2,22 @@ import { useState } from 'react'
 import { gql, useQuery, useMutation } from '@apollo/client'
 import { DeleteModal } from './DeleteModal'
 import { SearchResult } from '../gql/graphql'
-// import { Bhajan, SearchResult } from '../models/Bhajan'
 import { useBhajanStore } from '../stores/bhajanStore'
 
+export const SEARCH_BHAJANS = gql`
+  query SearchBhajans($searchTerm: String!) {
+    searchBhajans(searchTerm: $searchTerm) {
+      highlight {
+        title
+        author
+      }
+      bhajan {
+        title
+        author
+      }
+    }
+  }
+`
 
 const DELETE_BHAJAN = gql`
   mutation DeleteBhajan($title: String!, $author: String!) {
@@ -13,27 +26,13 @@ const DELETE_BHAJAN = gql`
 `
 
 export function BhajanList() {
-  const [search, setSearch] = useState('')
-  const { loading, error, data, refetch } = useQuery<{ searchBhajans: SearchResult[] }>(gql`
-    query SearchBhajans($searchTerm: String!) {
-      searchBhajans(searchTerm: $searchTerm) {
-        highlight {
-          title
-          author
-        }
-        bhajan {
-          title
-          author
-        }
-      }
-    }
-  `, {
-    variables: { searchTerm: search }
+  const { search, setSearch, currentBhajan, setCurrentBhajan } = useBhajanStore()
+  const { loading, error, data, refetch } = useQuery<{ searchBhajans: SearchResult[] }>(SEARCH_BHAJANS, {
+    variables: { searchTerm: search },
   })
 
   const [deleteBhajan] = useMutation(DELETE_BHAJAN)
   const [deleteModal, setDeleteModal] = useState<{ title: string; author: string } | null>(null)
-  const { currentBhajan, setCurrentBhajan } = useBhajanStore()
 
   const handleDelete = async (title: string, author: string) => {
     setDeleteModal({ title, author })
