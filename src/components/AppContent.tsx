@@ -33,12 +33,13 @@ export function AppContent() {
     }
   }
 
-  return writeTokenHash ? (
+  return writeTokenHash ? (<>
+    <div>version 1</div>
     <div className="main-container h-screen flex gap-4 p-4">
       <BhajanList />
       <BhajanForm />
     </div>
-  ) : (
+  </>) : (
     <LoginModal
       onConfirm={handleTokenCheck}
       error={error}
