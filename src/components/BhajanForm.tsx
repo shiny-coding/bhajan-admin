@@ -34,7 +34,7 @@ const CREATE_BHAJAN = gql`
 `
 
 export function BhajanForm() {
-  const { currentBhajan, setCurrentBhajan, search } = useBhajanStore()
+  const { currentBhajan, setCurrentBhajan, searchTerm } = useBhajanStore()
   const { data, loading, refetch } = useQuery(GET_BHAJAN, {
     variables: currentBhajan,
     skip: !currentBhajan,
@@ -45,7 +45,7 @@ export function BhajanForm() {
     refetchQueries: [
       {
         query: SEARCH_BHAJANS,
-        variables: { searchTerm: search }
+        variables: { searchTerm }
       }
     ],
     onCompleted: (data) => {
