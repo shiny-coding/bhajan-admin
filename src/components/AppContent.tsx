@@ -34,7 +34,7 @@ export function AppContent() {
   }
 
   return writeTokenHash ? (<>
-    <div>version 1</div>
+    <div className="absolute top-4 right-6 text-gray-400">v.2</div>
     <div className="main-container h-screen flex gap-4 p-4">
       <BhajanList />
       <BhajanForm />
