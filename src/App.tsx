@@ -3,11 +3,11 @@ import { setContext } from '@apollo/client/link/context'
 import { AppContent } from './components/AppContent'
 import { useAuthStore } from './stores/authStore'
 
-const remoteUrl = 'https://bhajan.miracall.net/api'
-const localUrl = 'http://localhost:4000'
+export const remoteUrl = 'https://bhajan.miracall.net/api'
+export const localUrl = 'http://localhost:4000'
 
 const httpLink = createHttpLink({
-  uri: localUrl,
+  uri: remoteUrl,
 })
 
 function App() {

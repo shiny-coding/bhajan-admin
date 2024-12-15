@@ -1,10 +1,8 @@
 import { CodegenConfig } from '@graphql-codegen/cli'
-
-const remoteUrl = 'https://bhajan.miracall.net/api'
-const localUrl = 'http://localhost:4000'
+import { remoteUrl } from './src/App'
 
 const config: CodegenConfig = {
-  schema: localUrl,
+  schema: remoteUrl,
   generates: {
     './src/gql/': {
       preset: 'client',
