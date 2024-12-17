@@ -5,6 +5,7 @@ import { LoginModal } from './LoginModal'
 import { useAuthStore } from '../stores/authStore'
 import { useState } from 'react'
 import { hashToken } from '../utils/hash'
+import { useBhajanStore } from '../stores/bhajanStore'
 
 const CHECK_TOKEN = gql`
   query CheckWriteToken($writeTokenHash: String!) {
@@ -12,10 +13,18 @@ const CHECK_TOKEN = gql`
   }
 `
 
+const REINDEX_ALL = gql`
+  mutation ReindexAll {
+    reindexAll
+  }
+`
+
 export function AppContent() {
   const { writeTokenHash, setWriteTokenHash } = useAuthStore()
+  const { setCurrentBhajan } = useBhajanStore()
   const [error, setError] = useState<string>()
   const [checkToken] = useLazyQuery(CHECK_TOKEN)
+  const [reindexAll, { loading: reindexing }] = useMutation(REINDEX_ALL)
 
   const handleTokenCheck = async (writeToken: string) => {
     try {
@@ -33,11 +42,54 @@ export function AppContent() {
     }
   }
 
+  const handleAddBhajan = () => {
+    setCurrentBhajan({
+      title: '',
+      author: ''
+    })
+  }
+
+  const handleLogout = () => {
+    setWriteTokenHash(null)
+  }
+
+  const handleReindex = async () => {
+    try {
+      await reindexAll()
+    } catch (err) {
+      alert('Reindex failed: ' + (err as Error).message)
+    }
+  }
+
   return writeTokenHash ? (<>
-    <div className="absolute top-4 right-6 text-gray-400">v.2</div>
-    <div className="main-container h-screen flex gap-4 p-4">
-      <BhajanList />
-      <BhajanForm />
+    <div className="h-screen flex flex-col p-4">
+      <div className="flex justify-between mb-4">
+        <button
+          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+          onClick={handleAddBhajan}
+        >
+          Add Bhajan
+        </button>
+        <div className="flex gap-2">
+          <button
+            className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 disabled:opacity-50"
+            onClick={handleReindex}
+            disabled={reindexing}
+          >
+            {reindexing ? 'Reindexing...' : 'Reindex'}
+          </button>
+          <button
+            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+      <div className="main-container flex gap-4 grow">
+        <BhajanList />
+        <BhajanForm />
+      </div>
     </div>
   </>) : (
     <LoginModal

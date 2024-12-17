@@ -1,8 +1,11 @@
 import { CodegenConfig } from '@graphql-codegen/cli'
-import { remoteUrl } from './src/App'
+import * as dotenv from 'dotenv'
+
+// Load environment variables from .env file
+dotenv.config()
 
 const config: CodegenConfig = {
-  schema: remoteUrl,
+  schema: process.env.VITE_API_URL,
   generates: {
     './src/gql/': {
       preset: 'client',
