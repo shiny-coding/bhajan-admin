@@ -1,0 +1,13 @@
+
+It is a client application which talks to GraphQL server:
+
+
+GraphQL server is using:
+
+"@apollo/server": "^4.11.2",
+"@types/cors": "^2.8.17",
+"@types/graphql-upload": "^17.0.0",
+"express": "^4.21.2",
+"graphql": "^16.9.0",
+"graphql-tag": "^2.12.6",
+"graphql-upload-minimal": "^1.6.1",
