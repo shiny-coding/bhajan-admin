@@ -106,7 +106,7 @@ export function BhajanList() {
   }
 
   return (
-    <div className="flex flex-col basis-[500px] max-w-[500px]">
+    <div className="flex flex-col basis-[500px] max-w-[500px] h-full overflow-hidden">
       <div className="relative">
         <input
           type="text"
@@ -128,7 +128,7 @@ export function BhajanList() {
       {loading && <p className="mt-4">Loading...</p>}
       {error && <p className="mt-4">Error: {error.message}</p>}
       
-      <div ref={listRef} className="space-y-4 pr-2 mt-4 overflow-y-auto scrollbar-thin">
+      <div ref={listRef} className="space-y-4 pr-2 mt-4 overflow-y-auto flex-1 min-h-0">
         {data?.searchBhajans.map((searchResult, index) => (
           <div 
             key={index}

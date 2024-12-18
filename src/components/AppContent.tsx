@@ -62,7 +62,7 @@ export function AppContent() {
   }
 
   return writeTokenHash ? (<>
-    <div className="h-screen flex flex-col p-4">
+    <div className="h-screen flex flex-col p-4 overflow-hidden">
       <div className="flex justify-between mb-4">
         <button
           className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
@@ -86,7 +86,7 @@ export function AppContent() {
           </button>
         </div>
       </div>
-      <div className="main-container flex gap-4 grow">
+      <div className="main-container flex gap-4 grow overflow-hidden">
         <BhajanList />
         <BhajanForm />
       </div>

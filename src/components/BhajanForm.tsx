@@ -131,9 +131,9 @@ export function BhajanForm() {
   }
 
   return (
-    <div className="grow border-2 border-gray-300 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow text-left overflow-y-auto">
+    <div className="grow border-2 border-gray-300 rounded-lg p-4 pr-1 bg-white shadow-sm hover:shadow-md transition-shadow text-left h-full flex flex-col overflow-hidden">
       {currentBhajan && (
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-4 flex-shrink-0">
           <div className="flex gap-2">
             <button 
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
@@ -169,46 +169,48 @@ export function BhajanForm() {
           )}
         </div>
       )}
-      {currentBhajan ? (
-        <form key={currentBhajan.title + currentBhajan.author} className="space-y-4" ref={formRef}>
-          {sortedFields.map(field => (
-            <div key={field} className={`flex flex-col ${field === 'audioPath' ? 'hidden' : ''}`}>
-              <label className={`font-bold capitalize ${saving ? 'text-gray-400' : ''}`}>{field}</label>
-              {queryLoading ? (
-                <div className="border rounded p-2 min-h-[100px] bg-gray-50">Loading...</div>
-              ) : (
-                <>
-                  <textarea 
-                    name={field}
-                    className={`border rounded p-2 ${BIG_FIELDS.includes(field) ? 'font-mono' : ''} 
-                      ${field === 'title' && titleError ? 'border-red-500' : ''}
-                      ${saving ? 'bg-gray-50' : ''}`}
-                    defaultValue={bhajan?.[field] ?? ''}
-                    rows={BIG_FIELDS.includes(field) ? 5 : 1}
-                    onChange={field === 'title' ? handleTitleChange : undefined}
-                    disabled={saving}
-                  />
-                  {field === 'title' && titleError && (
-                    <div className="text-red-500 text-sm mt-1">{titleError}</div>
-                  )}
-                </>
-              )}
+      <div className="overflow-y-auto flex-1 min-h-0 pr-2 scrollbar-thin">
+        {currentBhajan ? (
+          <form key={currentBhajan.title + currentBhajan.author} className="space-y-4" ref={formRef}>
+            {sortedFields.map(field => (
+              <div key={field} className={`flex flex-col ${field === 'audioPath' ? 'hidden' : ''}`}>
+                <label className={`font-bold capitalize ${saving ? 'text-gray-400' : ''}`}>{field}</label>
+                {queryLoading ? (
+                  <div className="border rounded p-2 min-h-[100px] bg-gray-50">Loading...</div>
+                ) : (
+                  <>
+                    <textarea 
+                      name={field}
+                      className={`border rounded p-2 ${BIG_FIELDS.includes(field) ? 'font-mono' : ''} 
+                        ${field === 'title' && titleError ? 'border-red-500' : ''}
+                        ${saving ? 'bg-gray-50' : ''}`}
+                      defaultValue={bhajan?.[field] ?? ''}
+                      rows={BIG_FIELDS.includes(field) ? 5 : 1}
+                      onChange={field === 'title' ? handleTitleChange : undefined}
+                      disabled={saving}
+                    />
+                    {field === 'title' && titleError && (
+                      <div className="text-red-500 text-sm mt-1">{titleError}</div>
+                    )}
+                  </>
+                )}
+              </div>
+            ))}
+            <div className="flex flex-col">
+              <label className={`font-bold ${saving ? 'text-gray-400' : ''}`}>Audio File</label>
+              <input
+                type="file"
+                name="audioFile"
+                accept="audio/*"
+                className={`border rounded p-2 ${saving ? 'bg-gray-50' : ''}`}
+                disabled={saving}
+              />
             </div>
-          ))}
-          <div className="flex flex-col">
-            <label className={`font-bold ${saving ? 'text-gray-400' : ''}`}>Audio File</label>
-            <input
-              type="file"
-              name="audioFile"
-              accept="audio/*"
-              className={`border rounded p-2 ${saving ? 'bg-gray-50' : ''}`}
-              disabled={saving}
-            />
-          </div>
-        </form>
-      ) : (
-        <p>Select a bhajan to view details</p>
-      )}
+          </form>
+        ) : (
+          <p>Select a bhajan to view details</p>
+        )}
+      </div>
     </div>
   )
 } 
