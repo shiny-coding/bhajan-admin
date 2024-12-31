@@ -1,4 +1,4 @@
-export type Bhajan1 = {
+export type Bhajan = {
   author: string;
   title: string;
   text?: string;
@@ -10,7 +10,7 @@ export type Bhajan1 = {
   audioPath?: string;
 }
 
-export type SearchResult1 = {
+export type SearchResult = {
   highlight: {
     title: string
     author: string

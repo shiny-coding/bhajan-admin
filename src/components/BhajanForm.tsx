@@ -9,31 +9,36 @@ const BHAJAN_FIELDS = keys<Bhajan>().filter(key => !key.startsWith('_'))
 
 const BIG_FIELDS = ['text', 'translation'];
 
-const FIELDS_ORDER = ['title', 'author', 'text', 'translation', 'chords', 'review', 'lessons', 'options']
+const FIELDS_ORDER = ['title', 'author', 'text', 'translation', 'chords', 'lessons', 'options']
 
 const GET_BHAJAN = gql`
   query GetBhajan($author: String!, $title: String!) {
     getBhajan(author: $author, title: $title) {
       ${BHAJAN_FIELDS.join('\n      ')},
-      audioPath
+      audioPath,
+      reviewPath
     }
   }
 `
 
 const CREATE_BHAJAN = gql`
   mutation CreateBhajan(
-    ${BHAJAN_FIELDS.map(field => `$${field}: String!`).join(',\n    ')}
+    ${BHAJAN_FIELDS.map(field => `$${field}: String!`).join(',\n      ')}
     $oldTitle: String,
     $oldAuthor: String,
     $audioFile: Upload,
-    $deleteAudio: Boolean
+    $reviewFile: Upload,
+    $deleteAudio: Boolean,
+    $deleteReview: Boolean
   ) {
     createBhajan(
-      ${BHAJAN_FIELDS.map(field => `${field}: $${field}`).join(',\n      ')}
+      ${BHAJAN_FIELDS.map(field => `${field}: $${field}`).join(',\n        ')}
       oldTitle: $oldTitle,
       oldAuthor: $oldAuthor,
       audioFile: $audioFile,
-      deleteAudio: $deleteAudio
+      reviewFile: $reviewFile,
+      deleteAudio: $deleteAudio,
+      deleteReview: $deleteReview
     )
   }
 `
@@ -42,7 +47,8 @@ export function BhajanForm() {
   const { currentBhajan, setCurrentBhajan, searchTerm } = useBhajanStore()
   const [titleError, setTitleError] = useState<string>()
   const [deleteAudio, setDeleteAudio] = useState(false)
-  const { data, loading: queryLoading, refetch } = useQuery(GET_BHAJAN, {
+  const [deleteReview, setDeleteReview] = useState(false)
+  const { data, loading: queryLoading, refetch, error: queryError } = useQuery(GET_BHAJAN, {
     variables: currentBhajan,
     skip: !currentBhajan || !currentBhajan.title,
     notifyOnNetworkStatusChange: true
@@ -50,6 +56,7 @@ export function BhajanForm() {
 
   useEffect(() => {
     setDeleteAudio(false)
+    setDeleteReview(false)
   }, [currentBhajan])
 
   const [createBhajan, { loading: saving }] = useMutation(CREATE_BHAJAN, {
@@ -70,13 +77,14 @@ export function BhajanForm() {
       const author = (formData.author as string).trim() || 'Unknown'
       setCurrentBhajan({ title, author })
       setDeleteAudio(false)
+      setDeleteReview(false)
       setTitleError(undefined)
       
-      // Reset file input
-      const fileInput = formRef.current?.querySelector('input[type="file"]') as HTMLInputElement
-      if (fileInput) {
-        fileInput.value = ''
-      }
+      // Reset file inputs
+      const fileInputs = formRef.current?.querySelectorAll('input[type="file"]') as NodeListOf<HTMLInputElement>
+      fileInputs.forEach(input => {
+        input.value = ''
+      })
     }
   })
 
@@ -94,6 +102,7 @@ export function BhajanForm() {
     const title = formData.get('title') as string
     const author = (formData.get('author') as string).trim() || 'Unknown'
     const audioFile = formData.get('audioFile') as File | null
+    const reviewFile = formData.get('reviewFile') as File | null
 
     if (!title.trim()) {
       setTitleError('Title cannot be empty')
@@ -114,7 +123,9 @@ export function BhajanForm() {
           oldAuthor: currentBhajan.author
         } : {}),
         audioFile: audioFile || null,
-        deleteAudio
+        reviewFile: reviewFile || null,
+        deleteAudio,
+        deleteReview
       } 
     })
   }
@@ -128,89 +139,138 @@ export function BhajanForm() {
   const handleRevert = () => {
     refetch()
     setDeleteAudio(false)
+    setDeleteReview(false)
   }
 
   return (
     <div className="grow border-2 border-gray-300 rounded-lg p-4 pr-1 bg-white shadow-sm hover:shadow-md transition-shadow text-left h-full flex flex-col overflow-hidden">
       {currentBhajan && (
-        <div className="flex justify-between items-center mb-4 flex-shrink-0">
-          <div className="flex gap-2">
-            <button 
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? 'Saving...' : 'Save'}
-            </button>
-            <button 
-              className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50"
-              onClick={handleRevert}
-              disabled={saving}
-            >
-              Revert
-            </button>
-          </div>
-          {bhajan?.audioPath && !deleteAudio && (
-            <div className="flex items-center gap-2">
-              <audio
-                src={`${import.meta.env.VITE_WEB_URL}/${bhajan.audioPath}`}
-                controls
-                className={`h-10 ${saving ? 'opacity-50 pointer-events-none' : ''}`}
-              />
-              <button
-                className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm disabled:opacity-50"
-                onClick={() => setDeleteAudio(true)}
-                title="Delete audio"
-                disabled={saving}
-              >
-                ✖
-              </button>
+        <>
+          {queryError ? (
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="text-red-500 mb-2">{queryError.message}</div>
+              {queryError.graphQLErrors?.map((error, index) => (
+                <div key={index} className="text-sm text-gray-600 font-mono whitespace-pre-wrap max-w-2xl">
+                  <div>Code: {(error.extensions?.code as string) || 'Unknown'}</div>
+                  <div className="mt-2">Stack trace:</div>
+                  <div className="bg-gray-100 p-2 rounded mt-1">
+                    {(error.extensions?.stacktrace as string[])?.join('\n') || 'No stack trace available'}
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
-        </div>
-      )}
-      <div className="overflow-y-auto flex-1 min-h-0 pr-2 scrollbar-thin">
-        {currentBhajan ? (
-          <form key={currentBhajan.title + currentBhajan.author} className="space-y-4" ref={formRef}>
-            {sortedFields.map(field => (
-              <div key={field} className={`flex flex-col ${field === 'audioPath' ? 'hidden' : ''}`}>
-                <label className={`font-bold capitalize ${saving ? 'text-gray-400' : ''}`}>{field}</label>
-                {queryLoading ? (
-                  <div className="border rounded p-2 min-h-[100px] bg-gray-50">Loading...</div>
+          ) : (
+            <>
+              <div className="flex justify-between items-center mb-4 flex-shrink-0">
+                <div className="flex gap-2">
+                  <button 
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                    onClick={handleSave}
+                    disabled={saving}
+                  >
+                    {saving ? 'Saving...' : 'Save'}
+                  </button>
+                  <button 
+                    className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50"
+                    onClick={handleRevert}
+                    disabled={saving}
+                  >
+                    Revert
+                  </button>
+                </div>
+                <div className="flex items-center gap-4">
+                  {bhajan?.audioPath && !deleteAudio && (
+                    <div className="flex items-center gap-2">
+                      <audio
+                        src={`${import.meta.env.VITE_WEB_URL}/${bhajan.audioPath}`}
+                        controls
+                        className={`h-10 ${saving ? 'opacity-50 pointer-events-none' : ''}`}
+                      />
+                      <button
+                        className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm disabled:opacity-50"
+                        onClick={() => setDeleteAudio(true)}
+                        title="Delete audio"
+                        disabled={saving}
+                      >
+                        ✖
+                      </button>
+                    </div>
+                  )}
+                  {bhajan?.reviewPath && !deleteReview && (
+                    <div className="flex items-center gap-2">
+                      <audio
+                        src={`${import.meta.env.VITE_WEB_URL}/${bhajan.reviewPath}`}
+                        controls
+                        className={`h-10 ${saving ? 'opacity-50 pointer-events-none' : ''}`}
+                      />
+                      <button
+                        className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm disabled:opacity-50"
+                        onClick={() => setDeleteReview(true)}
+                        title="Delete review"
+                        disabled={saving}
+                      >
+                        ✖
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="overflow-y-auto flex-1 min-h-0 pr-2 scrollbar-thin">
+                {currentBhajan ? (
+                  <form key={currentBhajan.title + currentBhajan.author} className="space-y-4" ref={formRef}>
+                    {sortedFields.map(field => (
+                      <div key={field} className={`flex flex-col ${field === 'audioPath' || field === 'reviewPath' || field === 'lastModified' ? 'hidden' : ''}`}>
+                        <label className={`font-bold capitalize ${saving ? 'text-gray-400' : ''}`}>{field}</label>
+                        {queryLoading ? (
+                          <div className="border rounded p-2 min-h-[100px] bg-gray-50">Loading...</div>
+                        ) : (
+                          <>
+                            <textarea 
+                              name={field}
+                              className={`border rounded p-2 ${BIG_FIELDS.includes(field) ? 'font-mono' : ''} 
+                                ${field === 'title' && titleError ? 'border-red-500' : ''}
+                                ${saving ? 'bg-gray-50' : ''}`}
+                              defaultValue={bhajan?.[field] ?? ''}
+                              rows={BIG_FIELDS.includes(field) ? 5 : 1}
+                              onChange={field === 'title' ? handleTitleChange : undefined}
+                              disabled={saving}
+                            />
+                            {field === 'title' && titleError && (
+                              <div className="text-red-500 text-sm mt-1">{titleError}</div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    ))}
+                    <div className="flex flex-col">
+                      <label className={`font-bold ${saving ? 'text-gray-400' : ''}`}>Audio File</label>
+                      <input
+                        type="file"
+                        name="audioFile"
+                        accept="audio/*"
+                        className={`border rounded p-2 ${saving ? 'bg-gray-50' : ''}`}
+                        disabled={saving}
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <label className={`font-bold ${saving ? 'text-gray-400' : ''}`}>Review File</label>
+                      <input
+                        type="file"
+                        name="reviewFile"
+                        accept="audio/*"
+                        className={`border rounded p-2 ${saving ? 'bg-gray-50' : ''}`}
+                        disabled={saving}
+                      />
+                    </div>
+                  </form>
                 ) : (
-                  <>
-                    <textarea 
-                      name={field}
-                      className={`border rounded p-2 ${BIG_FIELDS.includes(field) ? 'font-mono' : ''} 
-                        ${field === 'title' && titleError ? 'border-red-500' : ''}
-                        ${saving ? 'bg-gray-50' : ''}`}
-                      defaultValue={bhajan?.[field] ?? ''}
-                      rows={BIG_FIELDS.includes(field) ? 5 : 1}
-                      onChange={field === 'title' ? handleTitleChange : undefined}
-                      disabled={saving}
-                    />
-                    {field === 'title' && titleError && (
-                      <div className="text-red-500 text-sm mt-1">{titleError}</div>
-                    )}
-                  </>
+                  <p>Select a bhajan to view details</p>
                 )}
               </div>
-            ))}
-            <div className="flex flex-col">
-              <label className={`font-bold ${saving ? 'text-gray-400' : ''}`}>Audio File</label>
-              <input
-                type="file"
-                name="audioFile"
-                accept="audio/*"
-                className={`border rounded p-2 ${saving ? 'bg-gray-50' : ''}`}
-                disabled={saving}
-              />
-            </div>
-          </form>
-        ) : (
-          <p>Select a bhajan to view details</p>
-        )}
-      </div>
+            </>
+          )}
+        </>
+      )}
     </div>
   )
 } 

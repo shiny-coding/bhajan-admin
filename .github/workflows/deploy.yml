@@ -20,4 +20,5 @@ jobs:
             cd /var/www/miracall.net/bhajan-admin
             git pull
             yarn install
+            yarn codegen
             yarn build

@@ -13,6 +13,8 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
+  /** The `Upload` scalar type represents a file upload. */
+  Upload: { input: any; output: any; }
 };
 
 export type Bhajan = {
@@ -20,9 +22,10 @@ export type Bhajan = {
   audioPath?: Maybe<Scalars['String']['output']>;
   author: Scalars['String']['output'];
   chords?: Maybe<Scalars['String']['output']>;
+  lastModified: Scalars['Float']['output'];
   lessons?: Maybe<Scalars['String']['output']>;
   options?: Maybe<Scalars['String']['output']>;
-  review?: Maybe<Scalars['String']['output']>;
+  reviewPath?: Maybe<Scalars['String']['output']>;
   text?: Maybe<Scalars['String']['output']>;
   title: Scalars['String']['output'];
   translation?: Maybe<Scalars['String']['output']>;
@@ -30,7 +33,7 @@ export type Bhajan = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  createBhajan?: Maybe<Bhajan>;
+  createBhajan?: Maybe<Scalars['Boolean']['output']>;
   deleteBhajan?: Maybe<Scalars['Boolean']['output']>;
   importBhajansFromXls: Array<Bhajan>;
   reindexAll?: Maybe<Scalars['Boolean']['output']>;
@@ -38,12 +41,18 @@ export type Mutation = {
 
 
 export type MutationCreateBhajanArgs = {
+  audioFile?: InputMaybe<Scalars['Upload']['input']>;
   audioPath?: InputMaybe<Scalars['String']['input']>;
   author: Scalars['String']['input'];
   chords?: InputMaybe<Scalars['String']['input']>;
+  deleteAudio?: InputMaybe<Scalars['Boolean']['input']>;
+  deleteReview?: InputMaybe<Scalars['Boolean']['input']>;
   lessons?: InputMaybe<Scalars['String']['input']>;
+  oldAuthor?: InputMaybe<Scalars['String']['input']>;
+  oldTitle?: InputMaybe<Scalars['String']['input']>;
   options?: InputMaybe<Scalars['String']['input']>;
-  review?: InputMaybe<Scalars['String']['input']>;
+  reviewFile?: InputMaybe<Scalars['Upload']['input']>;
+  reviewPath?: InputMaybe<Scalars['String']['input']>;
   text?: InputMaybe<Scalars['String']['input']>;
   title: Scalars['String']['input'];
   translation?: InputMaybe<Scalars['String']['input']>;
@@ -57,9 +66,15 @@ export type MutationDeleteBhajanArgs = {
 
 export type Query = {
   __typename?: 'Query';
+  checkWriteToken?: Maybe<Scalars['Boolean']['output']>;
   getBhajan?: Maybe<Bhajan>;
   listBhajans?: Maybe<Array<Maybe<Bhajan>>>;
   searchBhajans?: Maybe<Array<Maybe<SearchResult>>>;
+};
+
+
+export type QueryCheckWriteTokenArgs = {
+  writeTokenHash: Scalars['String']['input'];
 };
 
 
