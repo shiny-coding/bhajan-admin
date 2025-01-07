@@ -16,9 +16,7 @@ const FIELDS_ORDER = ['title', 'author', 'text', 'translation', 'chords', 'lesso
 export const GET_BHAJAN = gql`
   query GetBhajan($author: String!, $title: String!) {
     getBhajan(author: $author, title: $title) {
-      ${BHAJAN_FIELDS.join('\n      ')},
-      audioPath,
-      reviewPath
+      ${BHAJAN_FIELDS.join('\n      ')}
     }
   }
 `
