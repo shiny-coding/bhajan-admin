@@ -25,85 +25,17 @@ const DELETE_BHAJAN = gql`
   }
 `
 
-export function BhajanList() {
-  const { searchTerm, setSearchTerm, currentBhajan, setCurrentBhajan, setFirstVisibleBhajan } = useBhajanStore()
+interface BhajanListProps {
+  onDelete: (title: string, author: string) => void
+}
+
+export function BhajanList({ onDelete }: BhajanListProps) {
+  const { searchTerm, setSearchTerm, currentBhajan, setCurrentBhajan } = useBhajanStore()
   const { loading, error, data, refetch } = useQuery<{ searchBhajans: SearchResult[] }>(SEARCH_BHAJANS, {
     variables: { searchTerm },
   })
 
-  const [deleteBhajan] = useMutation(DELETE_BHAJAN)
-  const [deleteModal, setDeleteModal] = useState<{ title: string; author: string } | null>(null)
-  const listRef = useRef<HTMLDivElement>(null)
-  const observerRef = useRef<IntersectionObserver | null>(null)
-
-  useEffect(() => {
-    if (!listRef.current || !data?.searchBhajans) return
-
-    // Disconnect previous observer if it exists
-    if (observerRef.current) {
-      observerRef.current.disconnect()
-    }
-
-    const visibleBhajans = new Set<Element>()
-
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            visibleBhajans.add(entry.target)
-          } else {
-            visibleBhajans.delete(entry.target)
-          }
-        })
-
-        // Convert to array and sort by DOM position
-        const visibleArray = Array.from(visibleBhajans)
-        const firstVisible = visibleArray[0]
-
-        if (firstVisible) {
-          const title = firstVisible.getAttribute('data-title')
-          const author = firstVisible.getAttribute('data-author')
-          if (title && author) {
-            setFirstVisibleBhajan({ title, author })
-          }
-        }
-      },
-      {
-        root: listRef.current,
-        threshold: 0.5
-      }
-    )
-
-    // Observe all bhajan items
-    const items = listRef.current.querySelectorAll('.bhajan-item')
-    items.forEach(item => {
-      observerRef.current?.observe(item)
-    })
-
-    console.log( 'adding items to observer', items.length)
-
-    return () => {
-      observerRef.current?.disconnect()
-    }
-  }, [data?.searchBhajans, setFirstVisibleBhajan])
-
-  const handleDelete = async (title: string, author: string) => {
-    setDeleteModal({ title, author })
-  }
-
-  const handleConfirmDelete = async () => {
-    if (deleteModal) {
-      try {
-        await deleteBhajan({ 
-          variables: { title: deleteModal.title, author: deleteModal.author }
-        })
-        refetch()
-      } catch (err) {
-        alert('Error deleting bhajan: ' + (err as Error).message)
-      }
-    }
-    setDeleteModal(null)
-  }
+  console.log('Rerending List with current bhajan', currentBhajan)
 
   return (
     <div className="flex flex-col basis-[500px] max-w-[500px] h-full overflow-hidden">
@@ -128,7 +60,7 @@ export function BhajanList() {
       {loading && <p className="mt-4">Loading...</p>}
       {error && <p className="mt-4">Error: {error.message}</p>}
       
-      <div ref={listRef} className="space-y-4 pr-2 mt-4 overflow-y-auto flex-1 min-h-0">
+      <div className="space-y-4 pr-2 mt-4 overflow-y-auto flex-1 min-h-0">
         {data?.searchBhajans.map((searchResult, index) => (
           <div 
             key={index}
@@ -136,8 +68,8 @@ export function BhajanList() {
             data-author={searchResult.bhajan.author}
             className={`bhajan-item border-2 cursor-pointer border-gray-300 rounded-lg p-4 
                         shadow-sm hover:shadow-md transition-shadow text-left
-                        ${currentBhajan?.title == searchResult.bhajan.title && 
-                          currentBhajan?.author == searchResult.bhajan.author 
+                        ${currentBhajan?.title === searchResult.bhajan.title && 
+                          currentBhajan?.author === searchResult.bhajan.author 
                             ? 'bg-green-200' : 'bg-white'}`}
             onClick={() => setCurrentBhajan({ 
               title: searchResult.bhajan.title, 
@@ -154,7 +86,7 @@ export function BhajanList() {
                   className="hover:text-red-600"
                   onClick={(e) => {
                     e.stopPropagation()
-                    handleDelete(searchResult.highlight.title, searchResult.highlight.author)
+                    onDelete(searchResult.bhajan.title, searchResult.bhajan.author)
                   }}
                 >✖</button>
               </div>
@@ -162,14 +94,6 @@ export function BhajanList() {
           </div>
         ))}
       </div>
-      {deleteModal && (
-        <DeleteModal 
-          title={deleteModal.title}
-          author={deleteModal.author}
-          onConfirm={handleConfirmDelete}
-          onCancel={() => setDeleteModal(null)}
-        />
-      )}
     </div>
   )
 } 

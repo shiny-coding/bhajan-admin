@@ -1,11 +1,12 @@
 import { gql, useMutation, useLazyQuery } from '@apollo/client'
-import { BhajanList } from './BhajanList'
-import { BhajanForm } from './BhajanForm'
+import { BhajanList, SEARCH_BHAJANS } from './BhajanList'
+import { BhajanForm, GET_BHAJAN } from './BhajanForm'
 import { LoginModal } from './LoginModal'
 import { useAuthStore } from '../stores/authStore'
 import { useState } from 'react'
 import { hashToken } from '../utils/hash'
 import { useBhajanStore } from '../stores/bhajanStore'
+import { DeleteModal } from './DeleteModal'
 
 const CHECK_TOKEN = gql`
   query CheckWriteToken($writeTokenHash: String!) {
@@ -19,12 +20,35 @@ const REINDEX_ALL = gql`
   }
 `
 
+const DELETE_BHAJAN = gql`
+  mutation DeleteBhajan($title: String!, $author: String!) {
+    deleteBhajan(title: $title, author: $author)
+  }
+`
+
 export function AppContent() {
   const { writeTokenHash, setWriteTokenHash } = useAuthStore()
-  const { setCurrentBhajan } = useBhajanStore()
+  const { setCurrentBhajan, searchTerm, currentBhajan } = useBhajanStore()
   const [error, setError] = useState<string>()
   const [checkToken] = useLazyQuery(CHECK_TOKEN)
   const [reindexAll, { loading: reindexing }] = useMutation(REINDEX_ALL)
+  const [deleteModal, setDeleteModal] = useState<{ title: string; author: string } | null>(null)
+  const [deleteBhajan] = useMutation(DELETE_BHAJAN, {
+    refetchQueries: [
+      {
+        query: SEARCH_BHAJANS,
+        variables: { searchTerm }
+      },
+      ...(currentBhajan && currentBhajan.title ? [{
+        query: GET_BHAJAN,
+        variables: currentBhajan
+      }] : []),
+      ...(deleteModal?.title ? [{
+        query: GET_BHAJAN,
+        variables: { title: deleteModal.title, author: deleteModal.author }
+      }] : [])
+    ]
+  })
 
   const handleTokenCheck = async (writeToken: string) => {
     try {
@@ -61,6 +85,28 @@ export function AppContent() {
     }
   }
 
+  const handleDelete = async (title: string, author: string) => {
+    setDeleteModal({ title, author })
+  }
+
+  const handleConfirmDelete = async () => {
+    if (deleteModal) {
+      try {
+        await deleteBhajan({ 
+          variables: { title: deleteModal.title, author: deleteModal.author }
+        })
+
+        if (currentBhajan?.title === deleteModal.title && currentBhajan?.author === deleteModal.author) {
+          setCurrentBhajan(null)
+        }
+
+      } catch (err) {
+        alert('Error deleting bhajan: ' + (err as Error).message)
+      }
+    }
+    setDeleteModal(null)
+  }
+
   return writeTokenHash ? (<>
     <div className="h-screen flex flex-col p-4 overflow-hidden">
       <div className="flex justify-between mb-4">
@@ -87,10 +133,18 @@ export function AppContent() {
         </div>
       </div>
       <div className="main-container flex gap-4 grow overflow-hidden">
-        <BhajanList />
+        <BhajanList onDelete={handleDelete} />
         <BhajanForm />
       </div>
     </div>
+    {deleteModal && (
+      <DeleteModal 
+        title={deleteModal.title}
+        author={deleteModal.author}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteModal(null)}
+      />
+    )}
   </>) : (
     <LoginModal
       onConfirm={handleTokenCheck}

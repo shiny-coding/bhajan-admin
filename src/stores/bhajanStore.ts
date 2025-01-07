@@ -8,7 +8,6 @@ interface BhajanState {
   searchTerm: string
   setSearchTerm: (searchTerm: string) => void
   firstVisibleBhajan: { title: string; author: string } | null
-  setFirstVisibleBhajan: (bhajan: { title: string; author: string } | null) => void
 }
 
 export const useBhajanStore = create<BhajanState>()(
@@ -19,7 +18,6 @@ export const useBhajanStore = create<BhajanState>()(
       searchTerm: '',
       setSearchTerm: (searchTerm) => set({ searchTerm }),
       firstVisibleBhajan: null,
-      setFirstVisibleBhajan: (bhajan) => set({ firstVisibleBhajan: bhajan })
     }),
     {
       name: 'bhajan-storage'

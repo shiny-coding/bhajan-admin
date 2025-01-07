@@ -13,7 +13,7 @@ const BIG_FIELDS = ['text', 'translation'];
 
 const FIELDS_ORDER = ['title', 'author', 'text', 'translation', 'chords', 'lessons', 'options']
 
-const GET_BHAJAN = gql`
+export const GET_BHAJAN = gql`
   query GetBhajan($author: String!, $title: String!) {
     getBhajan(author: $author, title: $title) {
       ${BHAJAN_FIELDS.join('\n      ')},
@@ -61,22 +61,31 @@ export function BhajanForm() {
     setDeleteReview(false)
   }, [currentBhajan])
 
+  const client = useApolloClient()
+
   const [createBhajan, { loading: saving }] = useMutation(CREATE_BHAJAN, {
     refetchQueries: [
       {
         query: SEARCH_BHAJANS,
         variables: { searchTerm }
       },
-      {
+      ...(currentBhajan && currentBhajan.title ? [{
         query: GET_BHAJAN,
-        variables: currentBhajan
-      }
+        variables: currentBhajan,
+      }] : [])
     ],
     awaitRefetchQueries: true,
-    onCompleted: (data) => {
+    onCompleted: async (data) => {
       const formData = getFormDataWithDisabled(formRef.current!)
       const title = formData.get('title') as string
       const author = (formData.get('author') as string).trim() || 'Unknown'
+      
+      // Evict this specific bhajan from cache
+      client.cache.evict({
+        fieldName: 'getBhajan',
+        args: { title, author }
+      })
+      
       setCurrentBhajan({ title, author })
       setDeleteAudio(false)
       setDeleteReview(false)
