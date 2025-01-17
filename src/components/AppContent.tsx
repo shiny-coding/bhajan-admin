@@ -1,12 +1,13 @@
-import { gql, useMutation, useLazyQuery } from '@apollo/client'
+import { gql, useMutation, useLazyQuery, useApolloClient } from '@apollo/client'
 import { BhajanList, SEARCH_BHAJANS } from './BhajanList'
 import { BhajanForm, GET_BHAJAN } from './BhajanForm'
 import { LoginModal } from './LoginModal'
 import { useAuthStore } from '../stores/authStore'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { hashToken } from '../utils/hash'
 import { useBhajanStore } from '../stores/bhajanStore'
 import { DeleteModal } from './DeleteModal'
+import { ImportStatsModal } from './ImportStatsModal'
 
 const CHECK_TOKEN = gql`
   query CheckWriteToken($writeTokenHash: String!) {
@@ -26,7 +27,30 @@ const DELETE_BHAJAN = gql`
   }
 `
 
+const EXPORT_BHAJANS = gql`
+  mutation ExportBhajans {
+    exportBhajans
+  }
+`
+
+const IMPORT_BHAJANS = gql`
+  mutation ImportBhajans($file: Upload!) {
+    importBhajans(file: $file) {
+      numberAdded
+      numberReplaced
+      numberSkipped
+    }
+  }
+`
+
+const DELETE_ALL_BHAJANS = gql`
+  mutation DeleteAllBhajans {
+    deleteAllBhajans
+  }
+`
+
 export function AppContent() {
+  const client = useApolloClient()
   const { writeTokenHash, setWriteTokenHash } = useAuthStore()
   const { setCurrentBhajan, searchTerm, currentBhajan } = useBhajanStore()
   const [error, setError] = useState<string>()
@@ -49,6 +73,15 @@ export function AppContent() {
       }] : [])
     ]
   })
+  const [exportBhajans, { loading: exporting }] = useMutation(EXPORT_BHAJANS)
+  const [importBhajans, { loading: importing }] = useMutation(IMPORT_BHAJANS)
+  const [deleteAllBhajans, { loading: deletingAll }] = useMutation(DELETE_ALL_BHAJANS)
+  const importInputRef = useRef<HTMLInputElement>(null)
+  const [importStats, setImportStats] = useState<{
+    numberAdded: number
+    numberReplaced: number
+    numberSkipped: number
+  } | null>(null)
 
   const handleTokenCheck = async (writeToken: string) => {
     try {
@@ -107,6 +140,60 @@ export function AppContent() {
     setDeleteModal(null)
   }
 
+  const handleExport = async () => {
+    try {
+      const { data } = await exportBhajans()
+      if (data?.exportBhajans) {
+        window.open(`${import.meta.env.VITE_WEB_URL}/${data.exportBhajans}`, '_blank')
+      }
+    } catch (err) {
+      alert('Export failed: ' + (err as Error).message)
+    }
+  }
+
+  const handleImport = async () => {
+    importInputRef.current?.click()
+  }
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      try {
+        const { data } = await importBhajans({ 
+          variables: { file }
+        })
+        
+        if (data?.importBhajans) {
+          setImportStats(data.importBhajans)
+          await client.refetchQueries({
+            include: 'active'
+          })
+
+          await client.clearStore()
+        }
+        
+        e.target.value = ''
+      } catch (err) {
+        alert('Import failed: ' + (err as Error).message)
+      }
+    }
+  }
+
+  const handleDeleteAll = async () => {
+    if (window.confirm('Are you sure you want to delete ALL bhajans? This cannot be undone!')) {
+      try {
+        await deleteAllBhajans()
+        setCurrentBhajan(null)
+        await client.refetchQueries({
+          include: 'active'
+        })
+        await client.clearStore()
+      } catch (err) {
+        alert('Failed to delete all bhajans: ' + (err as Error).message)
+      }
+    }
+  }
+
   return writeTokenHash ? (<>
     <div className="h-screen flex flex-col p-4 overflow-hidden">
       <div className="flex justify-between mb-4">
@@ -117,6 +204,34 @@ export function AppContent() {
           Add Bhajan
         </button>
         <div className="flex gap-2">
+          <button
+            className="px-4 py-2 bg-red-700 text-white rounded hover:bg-red-800 disabled:opacity-50"
+            onClick={handleDeleteAll}
+            disabled={deletingAll}
+          >
+            {deletingAll ? 'Deleting All...' : 'Delete All'}
+          </button>
+          <input
+            type="file"
+            ref={importInputRef}
+            onChange={handleFileSelect}
+            className="hidden"
+            accept=".xlsx"
+          />
+          <button
+            className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
+            onClick={handleImport}
+            disabled={importing}
+          >
+            {importing ? 'Importing...' : 'Import'}
+          </button>
+          <button
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            onClick={handleExport}
+            disabled={exporting}
+          >
+            {exporting ? 'Exporting...' : 'Export'}
+          </button>
           <button
             className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 disabled:opacity-50"
             onClick={handleReindex}
@@ -143,6 +258,12 @@ export function AppContent() {
         author={deleteModal.author}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteModal(null)}
+      />
+    )}
+    {importStats && (
+      <ImportStatsModal 
+        stats={importStats}
+        onClose={() => setImportStats(null)}
       />
     )}
   </>) : (

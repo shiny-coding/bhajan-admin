@@ -22,7 +22,7 @@ export type Bhajan = {
   audioPath?: Maybe<Scalars['String']['output']>;
   author: Scalars['String']['output'];
   chords?: Maybe<Scalars['String']['output']>;
-  lastModified: Scalars['Float']['output'];
+  lastModified?: Maybe<Scalars['Float']['output']>;
   lessons?: Maybe<Scalars['String']['output']>;
   options?: Maybe<Scalars['String']['output']>;
   reviewPath?: Maybe<Scalars['String']['output']>;
@@ -31,11 +31,20 @@ export type Bhajan = {
   translation?: Maybe<Scalars['String']['output']>;
 };
 
+export type ImportStats = {
+  __typename?: 'ImportStats';
+  numberAdded: Scalars['Int']['output'];
+  numberReplaced: Scalars['Int']['output'];
+  numberSkipped: Scalars['Int']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   createBhajan?: Maybe<Scalars['Boolean']['output']>;
+  deleteAllBhajans: Scalars['Boolean']['output'];
   deleteBhajan?: Maybe<Scalars['Boolean']['output']>;
-  importBhajansFromXls: Array<Bhajan>;
+  exportBhajans?: Maybe<Scalars['String']['output']>;
+  importBhajans: ImportStats;
   reindexAll?: Maybe<Scalars['Boolean']['output']>;
 };
 
@@ -62,6 +71,11 @@ export type MutationCreateBhajanArgs = {
 export type MutationDeleteBhajanArgs = {
   author: Scalars['String']['input'];
   title: Scalars['String']['input'];
+};
+
+
+export type MutationImportBhajansArgs = {
+  file: Scalars['Upload']['input'];
 };
 
 export type Query = {
